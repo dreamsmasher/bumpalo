@@ -1,6 +1,5 @@
 # `bumpalo`
 
-
 **A fast bump allocation arena for Rust.**
 
 [![](https://docs.rs/bumpalo/badge.svg)](https://docs.rs/bumpalo/)
@@ -33,10 +32,12 @@ pointer back to the start of the arena's memory chunk. This makes mass
 deallocation *extremely* fast, but allocated objects' `Drop` implementations are
 not invoked.
 
-> **However:** [`bumpalo::boxed::Box<T>`][crate::boxed::Box] can be used to wrap
-> `T` values allocated in the `Bump` arena, and calls `T`'s `Drop`
-> implementation when the `Box<T>` wrapper goes out of scope. This is similar to
-> how [`std::boxed::Box`] works, except without deallocating its backing memory.
+> **However:**
+> [`bumpalo::boxed::Box<T>`][https://docs.rs/bumpalo/*/bumpalo/boxed/struct.Box.html]
+> can be used to wrap `T` values allocated in the `Bump` arena, and calls `T`'s
+> `Drop` implementation when the `Box<T>` wrapper goes out of scope. This is
+> similar to how [`std::boxed::Box`] works, except without deallocating its
+> backing memory.
 
 [`std::boxed::Box`]: https://doc.rust-lang.org/std/boxed/struct.Box.html
 
@@ -80,6 +81,8 @@ collection types are modified to allocate their space inside `bumpalo::Bump`
 arenas.
 
 ```rust
+# #[cfg(feature = "collections")]
+# {
 use bumpalo::{Bump, collections::Vec};
 
 // Create a new bump arena.
@@ -93,7 +96,8 @@ let mut v = Vec::new_in(&bump);
 // Push a bunch of integers onto `v`!
 for i in 0..100 {
     v.push(i);
-}
+    }
+# }
 ```
 
 Eventually [all `std` collection types will be parameterized by an
@@ -114,6 +118,8 @@ can use this to work around the fact that `Bump` does not drop values allocated
 in its space itself.
 
 ```rust
+# #[cfg(feature = "boxed")]
+# {
 use bumpalo::{Bump, boxed::Box};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -141,6 +147,7 @@ drop(c);
 
 // Its `Drop` implementation was run, and so `NUM_DROPS` has been incremented.
 assert_eq!(NUM_DROPPED.load(Ordering::SeqCst), 1);
+# }
 ```
 
 ### `#![no_std]` Support
@@ -149,11 +156,11 @@ Bumpalo is a `no_std` crate. It depends only on the `alloc` and `core` crates.
 
 ### Thread support
 
-The `Bump` is `!Send`, which makes it hard to use in certain situations around threads ‒ for
-example in `rayon`.
+The `Bump` is `!Sync`, which makes it hard to use in certain situations around
+threads ‒ for example in `rayon`.
 
-The [`bumpalo-herd`](https://crates.io/crates/bumpalo-herd) crate provides a pool of `Bump`
-allocators for use in such situations.
+The [`bumpalo-herd`](https://crates.io/crates/bumpalo-herd) crate provides a
+pool of `Bump` allocators for use in such situations.
 
 ### Nightly Rust `feature(allocator_api)` Support
 
@@ -172,16 +179,17 @@ First, enable the `allocator_api` feature in your `Cargo.toml`:
 bumpalo = { version = "3.4.0", features = ["allocator_api"] }
 ```
 
-Next, enable the `allocator_api` nightly Rust feature in your `src/lib.rs` or `src/main.rs`:
+Next, enable the `allocator_api` nightly Rust feature in your `src/lib.rs` or
+`src/main.rs`:
 
-```rust
+```rust,ignore
 #![feature(allocator_api)]
 ```
 
 Finally, use `std` collections with `Bump`, so that their internal heap
 allocations are made within the given bump arena:
 
-```rust
+```rust,ignore
 #![feature(allocator_api)]
 use bumpalo::Bump;
 
@@ -200,6 +208,5 @@ v.push(2);
 This crate is guaranteed to compile on stable Rust 1.44 and up. It might compile
 with older versions but that may change in any new patch release.
 
-We reserve the right to increment the MSRV on minor releases, however we will strive
-to only do it deliberately and for good reasons.
-
+We reserve the right to increment the MSRV on minor releases, however we will
+strive to only do it deliberately and for good reasons.
